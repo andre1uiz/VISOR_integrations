@@ -1,0 +1,180 @@
+<EliTask name="task_hand_eye_calib" installationName="default" robotType="CS63" createdVersion="2.13.0.0" lastSavedVersion="2.13.0.0" robotSN="11111111111111" savedTime="2026-03-18 04:18:55" directory="NewFolder" typeName="Robot Main Task">
+  <InitVariables typeName="Init Variables Value"/>
+  <MainTask isTaskAlwaysLoops="false" hasBeforeStart="false" hasInitVariables="true" typeName="Robot Main Task">
+    <ScriptNode scriptType="FILE_TYPE" typeName="Script">
+      <cachedFileContents>&quot;&quot;&quot;
+This script contains the functions and procedures to perform a hand-eye calibration
+with SensoPart VISOR
+By changing the variables below it is possible to change job to be calibrated and 
+insert all calibration parameters
+when executed, it will try to go to pre-configured poses with names &quot;pose1&quot;, &quot;pose2&quot;, &quot;posen&quot;
+Remembering only that the first pose defines measurement plane, so this first pose should
+be related to image acquisition pose - with same distance and angle from the target.
+&quot;&quot;&quot;
+
+##Connection parameters
+address = &quot;192.168.100.130&quot; #camera ip address
+port = 2006 #camera port
+
+#Calibration parameters
+job_name = &quot;Calib&quot; #job name where calibration needs to be configurated 
+method = 5 # value for hand eye calibration
+units = {
+&quot;mm&quot;:0,
+&quot;cm&quot;:1,
+&quot;m&quot;:2,
+&quot;inch&quot;:3} #value for unit in meters - arbitrary unit not included
+unit_selection = units[&quot;m&quot;]
+z_shift = 0.0 #z-shift value in the same unit previous selected
+calibration_plates_list = [&quot;Calibration plate 15x13 50mm.cpd&quot;,
+&quot;Calibration plate 15x13 100mm.cpd&quot;,
+&quot;Calibration plate 15x13 200mm.cpd&quot;,
+&quot;Calibration plate 15x13 500mm.cpd&quot;]
+plate_selection = 1 # value from calibration plate selection list from 0 (50mm) to 3 (500mm)
+rotation_order = {
+&quot;user_specified_in_job&quot;: &quot;00&quot;,
+&quot;ypr&quot;: &quot;01&quot;,
+&quot;rpy&quot;:&quot;02&quot;}
+poses = [pose1,pose2,pose3,pose4,pose5,pose6,pose7,pose8]#
+#************************************************************
+&quot;&quot;&quot;To edit message length to a message_size number of bytes, completing with &quot;0&quot; prefix&quot;&quot;&quot;
+def string_format(message, message_size):
+  message_length = len(message)
+  number = &quot;&quot;
+  if message_length &lt; message_size:
+    prefix_value = message_size - message_length
+    prefix = &quot;&quot;
+    for i in range(prefix_value):
+      prefix = prefix + &quot;0&quot;
+    number = str_cat(prefix,message)
+  return number
+#***************************************
+#receives pose list and formats it to camera positions
+#@pose = list(pose)[X,Y,Z,Rx,Ry,Rz] coords in [m] angles in rads
+#=&gt;returns list(string_formatted_coordinates)
+def format_str_pose(pose):
+  str_coords = []
+  if len(pose) == 6:
+    for coord in pose[:3]:
+      str_coords.append(string_format(to_str(floor(coord*1000)),8))
+
+    for angle in pose[3:]:
+      deg_angle = r2d(angle)
+      str_coords.append(string_format(to_str(floor(deg_angle)),8))
+  else:
+    return(False)
+  if len(str_coords) == 6:
+    return str_coords
+#***************************************
+#Manages camera connection @bool, when True tries to connect, otherwise disconnects
+def camera_connect(status):
+  if status:
+    socket_open(address, port, &quot;socket_0&quot;)
+  else:
+    socket_close(&quot;socket_0&quot;)
+  return socket_is_connected(&quot;socket_0&quot;)
+
+#***************************************
+def send_camera_parameters(message):
+  data_sent = socket_send_string(message, socket_name=&quot;socket_0&quot;)
+  if not data_sent:
+    popup(&quot;Failed to send message to the camera&quot;, title= &quot;Message Failure&quot;)
+    return(False)
+  else:
+    response = socket_read_string(socket_name=&quot;socket_0&quot;, prefix=&quot;&quot;, suffix=&quot;&quot;, timeout=2)
+    if response:
+      return(response)
+    else:
+      return(False)
+
+#*****************************************************
+#change job function TODO: error trreatement properly
+def change_job(job):
+  send_str = &quot;CJN1&quot;+string_format(to_str(str_len(job)),3)+job
+  job_change_response = send_camera_parameters(send_str)
+  popup(to_str(job_change_response)+&quot;\n&quot;+to_str(send_str), title= &quot;Job alterado&quot;)
+  #send_camera_parameters(&quot;TRG&quot;)
+  
+  
+#*****************************************************
+#Configure calibration type to hand-eye
+def select_calibration_type(type):
+  calib_selection_str = &quot;CSP1100200000001&quot;+to_str(type)
+  set_calib_response = send_camera_parameters(calib_selection_str)
+  popup(to_str(set_calib_response)+&quot;\n\n&quot;+calib_selection_str, title=&quot;Calibration type selected?&quot;) 
+
+#*****************************************************
+#Configure calibration unit to be used - in case of Elite it is meters
+def select_calibration_unit(unit_for_calibration):
+  calib_unit_str = &quot;CSP1100400000001&quot;+to_str(unit_for_calibration)
+  set_calib_response = send_camera_parameters(calib_unit_str)
+  popup(to_str(set_calib_response)+&quot;\n\n&quot;+calib_unit_str, title=&quot;Calibration unit selected?&quot;) 
+
+#*****************************************************
+#Configure calibration plate to be used - select from list
+def select_calibration_plate(plate):
+  plate_str_len = str_len(plate) 
+  len_str = string_format(to_str(plate_str_len),8)
+  calib_plate_str = &quot;CSP11023&quot; + len_str + plate
+  set_calib_response = send_camera_parameters(calib_plate_str)
+  popup(to_str(set_calib_response)+&quot;\n\n&quot;+calib_plate_str, title=&quot;Calibration plate selected?&quot;)
+  
+#*****************************************************
+#Configure calibration plate to be used - select from list
+def define_z_offset(offset):
+  offset_int = floor(offset*1000) #z offset always in mm 
+  formatted_str = string_format(to_str(offset_int),8)
+  length_formatted = string_format(to_str(len(formatted_str)),8)
+  calib_zshift_str = &quot;CSP11021&quot; + length_formatted + formatted_str
+  set_calib_response = send_camera_parameters(calib_zshift_str)
+  popup(to_str(set_calib_response)+&quot;\n\n&quot;+calib_zshift_str, title=&quot;Calibration z shift selected?&quot;)
+#****************************************************************************
+&quot;&quot;&quot;Function to add images for calibration 
+Parameters: pose - robot actual coordinates (list)
+            is_plane -&gt; is it for measurement plane (bool)
+Return success (bool)&quot;&quot;&quot;
+def add_img_calib(pose, is_plane):
+  add_img_message = &quot;CAI12001&quot;
+  if is_plane:
+    add_img_message = add_img_message + &quot;1&quot;
+  else:
+    add_img_message = add_img_message + &quot;0&quot;
+  
+  add_img_message = add_img_message + &quot;02&quot;
+  pose_str = format_str_pose(pose)
+  for coord in pose_str:
+    add_img_message = add_img_message + coord
+  response = send_camera_parameters(add_img_message)
+  return response
+#****************************************************************************   
+#Execution
+def execute_calibration():
+  is_connected = camera_connect(True)
+  #popup(is_connected, title=&quot;Connection succeed?&quot;)
+  if is_connected:
+    change_job(job_name)
+    select_calibration_type(method)
+    select_calibration_unit(unit_selection)
+    select_calibration_plate(calibration_plates_list[plate_selection])
+    define_z_offset(z_shift)
+    response = send_camera_parameters(&quot;CCD&quot;)
+    if response == &quot;CCDP&quot;:
+      movel(poses[0])
+      plane_pose = get_actual_tcp_pose()
+      response = add_img_calib(plane_pose, True)
+      popup(response, title=&quot;CAI command&quot;)
+      for pose in poses[1:]:
+        movel(pose)
+        current_pose = get_actual_tcp_pose()
+        response = add_img_calib(current_pose, False)
+        popup(response, title=&quot;CAI command&quot;)
+        
+      response = send_camera_parameters(&quot;CRP1140&quot;)
+      popup(response, title=&quot;Calibration command&quot;)
+    camera_connect(False)
+execute_calibration()
+</cachedFileContents>
+      <scriptFile pathRootType="TASK_PATH" path="NewFolder/hand_eye_calibration_parameters.script"/>
+    </ScriptNode>
+  </MainTask>
+</EliTask>

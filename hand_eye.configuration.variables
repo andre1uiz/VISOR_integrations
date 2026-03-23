@@ -1,0 +1,10 @@
+<VariablesManager>
+  <Variable name="pose1" value="[0.42912, -0.14261, 0.32704, -3.0485, 0.02968, -1.63095]" remarks=""/>
+  <Variable name="pose2" value="[0.44217, -0.14262, 0.29054, -3.13209, 0.02461, -1.63322]" remarks=""/>
+  <Variable name="pose3" value="[0.44217, -0.19455, 0.29054, -3.13209, 0.02461, -1.63322]" remarks=""/>
+  <Variable name="pose4" value="[0.44923, -0.20309, 0.29837, -3.07248, 0.41091, -1.61775]" remarks=""/>
+  <Variable name="pose5" value="[0.41474, -0.08156, 0.24159, -3.02378, 0.00588, -1.82345]" remarks=""/>
+  <Variable name="pose6" value="[0.45767, -0.03593, 0.24159, 2.54418, -0.1634, -1.76446]" remarks=""/>
+  <Variable name="pose7" value="[0.3368, -0.01916, 0.24159, 3.11691, -0.03083, -1.82168]" remarks=""/>
+  <Variable name="pose8" value="[0.35376, -0.0006, 0.24801, -2.89963, -0.29298, -1.85056]" remarks=""/>
+</VariablesManager>

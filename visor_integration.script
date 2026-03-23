@@ -1,0 +1,36 @@
+ip_address = "" # camera IP Address
+port = 0 # Camera port
+
+#********************************************************************************
+"""Receives a coordinate and it returns it as string formatted value for the VISOR
+each coordinate will have a lenght of 8"""
+
+def string_format(position):
+  coord = to_str(floor(position*1000))
+  coord_len = len(coord)
+  if coord_len < 8:
+    prefix_value = 8 - coord_len
+    prefix = ""
+    for i in range(prefix_value):
+      prefix = prefix + "0"
+    coord = str_cat(prefix,coord)
+  return coord
+
+#*******************************************************************************
+"""Receives and converts all robot coordinates to be accepted in VISOR Telegrams
+returns list[strings] with x y z in [m] and rx, ry and rz in degrees"""
+
+def get_pose_string():
+  str_current_pose = [] # String with values manipulated
+  current_pose = get_actual_tcp_pose() # to receive robot positions in meters and rad
+  if len(current_pose) == 6:
+    positions = current_pose[:3]
+    angles = current_pose[3:]
+    for position in positions:
+      str_current_pose.append(string_format(position))
+    for angle in angles:
+      str_current_pose.append(string_format(r2d(angle)))
+    result = to_str(current_pose) + "\n" + to_str(str_current_pose)
+    popup(result, title="Popup test")
+
+get_pose_string()

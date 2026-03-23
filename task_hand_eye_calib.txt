@@ -1,0 +1,4 @@
+Current Task: task_hand_eye_calib
+    Init Variables Value
+    Robot Main Task
+        Script: hand_eye_calibration_parameters.script

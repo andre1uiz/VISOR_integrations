@@ -1,0 +1,43 @@
+address = "192.168.100.130" #camera ip address
+port = 2006 #camera port
+job_name = "Calib" #job name where calibration needs to be configurated 
+
+"""To edit job name length to a 3 byte size"""
+def string_format(message, message_size):
+  message_length = len(message)
+  number = ""
+  if len((to_str(message_length))) < message_size:
+    prefix_value = message_size - len((to_str(message_length)))
+    prefix = ""
+    for i in range(prefix_value):
+      prefix = prefix + "0"
+    number = str_cat(prefix,to_str(message_length))
+  return number
+
+#***************************************
+
+def send_camera_parameters(message):
+  connected = socket_open(address, port,"socket_0")
+  if connected:
+    data_sent = socket_send_string(message, socket_name="socket_0")
+    if not data_sent:
+      popup("Failed to send message to the camera", title= "Message Failure")
+      return(False)
+    else:
+      response = socket_read_string(socket_name="socket_0", prefix="", suffix="", timeout=2)
+      if response:
+        return(response)
+      else:
+        return(False)
+  else:
+    popup("Connection to camera failed"+to_str(connected), title= "Connection issue")
+    return(False)
+  socket_close(socket_name="socket_0")
+
+#*****************************************************
+
+send_str = "CJN1"+string_format(job_name,3)+job_name
+teste = send_camera_parameters(send_str)
+popup(to_str(teste)+"\n"+to_str(send_str), title= "mensagem enviada")
+
+

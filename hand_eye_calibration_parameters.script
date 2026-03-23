@@ -1,0 +1,171 @@
+"""
+This script contains the functions and procedures to perform a hand-eye calibration
+with SensoPart VISOR
+By changing the variables below it is possible to change job to be calibrated and 
+insert all calibration parameters
+when executed, it will try to go to pre-configured poses with names "pose1", "pose2", "posen"
+Remembering only that the first pose defines measurement plane, so this first pose should
+be related to image acquisition pose - with same distance and angle from the target.
+"""
+
+##Connection parameters
+address = "192.168.100.130" #camera ip address
+port = 2006 #camera port
+
+#Calibration parameters
+job_name = "Calib" #job name where calibration needs to be configurated 
+method = 5 # value for hand eye calibration
+units = {
+"mm":0,
+"cm":1,
+"m":2,
+"inch":3} #value for unit in meters - arbitrary unit not included
+unit_selection = units["m"]
+z_shift = 0.0 #z-shift value in the same unit previous selected
+calibration_plates_list = ["Calibration plate 15x13 50mm.cpd",
+"Calibration plate 15x13 100mm.cpd",
+"Calibration plate 15x13 200mm.cpd",
+"Calibration plate 15x13 500mm.cpd"]
+plate_selection = 1 # value from calibration plate selection list from 0 (50mm) to 3 (500mm)
+rotation_order = {
+"user_specified_in_job": "00",
+"ypr": "01",
+"rpy":"02"}
+poses = [pose1,pose2,pose3,pose4,pose5,pose6,pose7,pose8]#
+#************************************************************
+"""To edit message length to a message_size number of bytes, completing with "0" prefix"""
+def string_format(message, message_size):
+  message_length = len(message)
+  number = ""
+  if message_length < message_size:
+    prefix_value = message_size - message_length
+    prefix = ""
+    for i in range(prefix_value):
+      prefix = prefix + "0"
+    number = str_cat(prefix,message)
+  return number
+#***************************************
+#receives pose list and formats it to camera positions
+#@pose = list(pose)[X,Y,Z,Rx,Ry,Rz] coords in [m] angles in rads
+#=>returns list(string_formatted_coordinates)
+def format_str_pose(pose):
+  str_coords = []
+  if len(pose) == 6:
+    for coord in pose[:3]:
+      str_coords.append(string_format(to_str(floor(coord*1000)),8))
+
+    for angle in pose[3:]:
+      deg_angle = r2d(angle)
+      str_coords.append(string_format(to_str(floor(deg_angle)),8))
+  else:
+    return(False)
+  if len(str_coords) == 6:
+    return str_coords
+#***************************************
+#Manages camera connection @bool, when True tries to connect, otherwise disconnects
+def camera_connect(status):
+  if status:
+    socket_open(address, port, "socket_0")
+  else:
+    socket_close("socket_0")
+  return socket_is_connected("socket_0")
+
+#***************************************
+def send_camera_parameters(message):
+  data_sent = socket_send_string(message, socket_name="socket_0")
+  if not data_sent:
+    popup("Failed to send message to the camera", title= "Message Failure")
+    return(False)
+  else:
+    response = socket_read_string(socket_name="socket_0", prefix="", suffix="", timeout=2)
+    if response:
+      return(response)
+    else:
+      return(False)
+
+#*****************************************************
+#change job function TODO: error trreatement properly
+def change_job(job):
+  send_str = "CJN1"+string_format(to_str(str_len(job)),3)+job
+  job_change_response = send_camera_parameters(send_str)
+  popup(to_str(job_change_response)+"\n"+to_str(send_str), title= "Job alterado")
+  #send_camera_parameters("TRG")
+  
+  
+#*****************************************************
+#Configure calibration type to hand-eye
+def select_calibration_type(type):
+  calib_selection_str = "CSP1100200000001"+to_str(type)
+  set_calib_response = send_camera_parameters(calib_selection_str)
+  popup(to_str(set_calib_response)+"\n\n"+calib_selection_str, title="Calibration type selected?") 
+
+#*****************************************************
+#Configure calibration unit to be used - in case of Elite it is meters
+def select_calibration_unit(unit_for_calibration):
+  calib_unit_str = "CSP1100400000001"+to_str(unit_for_calibration)
+  set_calib_response = send_camera_parameters(calib_unit_str)
+  popup(to_str(set_calib_response)+"\n\n"+calib_unit_str, title="Calibration unit selected?") 
+
+#*****************************************************
+#Configure calibration plate to be used - select from list
+def select_calibration_plate(plate):
+  plate_str_len = str_len(plate) 
+  len_str = string_format(to_str(plate_str_len),8)
+  calib_plate_str = "CSP11023" + len_str + plate
+  set_calib_response = send_camera_parameters(calib_plate_str)
+  popup(to_str(set_calib_response)+"\n\n"+calib_plate_str, title="Calibration plate selected?")
+  
+#*****************************************************
+#Configure calibration plate to be used - select from list
+def define_z_offset(offset):
+  offset_int = floor(offset*1000) #z offset always in mm 
+  formatted_str = string_format(to_str(offset_int),8)
+  length_formatted = string_format(to_str(len(formatted_str)),8)
+  calib_zshift_str = "CSP11021" + length_formatted + formatted_str
+  set_calib_response = send_camera_parameters(calib_zshift_str)
+  popup(to_str(set_calib_response)+"\n\n"+calib_zshift_str, title="Calibration z shift selected?")
+#****************************************************************************
+"""Function to add images for calibration 
+Parameters: pose - robot actual coordinates (list)
+            is_plane -> is it for measurement plane (bool)
+Return success (bool)"""
+def add_img_calib(pose, is_plane):
+  add_img_message = "CAI12001"
+  if is_plane:
+    add_img_message = add_img_message + "1"
+  else:
+    add_img_message = add_img_message + "0"
+  
+  add_img_message = add_img_message + "02"
+  pose_str = format_str_pose(pose)
+  for coord in pose_str:
+    add_img_message = add_img_message + coord
+  response = send_camera_parameters(add_img_message)
+  return response
+#****************************************************************************   
+#Execution
+def execute_calibration():
+  is_connected = camera_connect(True)
+  #popup(is_connected, title="Connection succeed?")
+  if is_connected:
+    change_job(job_name)
+    select_calibration_type(method)
+    select_calibration_unit(unit_selection)
+    select_calibration_plate(calibration_plates_list[plate_selection])
+    define_z_offset(z_shift)
+    response = send_camera_parameters("CCD")
+    if response == "CCDP":
+      movel(poses[0])
+      plane_pose = get_actual_tcp_pose()
+      response = add_img_calib(plane_pose, True)
+      #popup(response, title="CAI command")
+      for pose in poses[1:]:
+        movel(pose)
+        current_pose = get_actual_tcp_pose()
+        response = add_img_calib(current_pose, False)
+        #popup(response, title="CAI command")
+        
+      response = send_camera_parameters("CRP1140")
+      popup(response, title="Calibration command")
+    camera_connect(False)
+execute_calibration()
