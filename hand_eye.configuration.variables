@@ -1,5 +1,5 @@
 <VariablesManager>
-  <Variable name="pose1" value="[0.42912, -0.14261, 0.32704, -3.0485, 0.02968, -1.63095]" remarks=""/>
+  <Variable name="pose1" value="[0.46721, -0.14454, 0.33413, -3.06954, 0.00011, -1.57091]" remarks=""/>
   <Variable name="pose2" value="[0.44217, -0.14262, 0.29054, -3.13209, 0.02461, -1.63322]" remarks=""/>
   <Variable name="pose3" value="[0.44217, -0.19455, 0.29054, -3.13209, 0.02461, -1.63322]" remarks=""/>
   <Variable name="pose4" value="[0.44923, -0.20309, 0.29837, -3.07248, 0.41091, -1.61775]" remarks=""/>

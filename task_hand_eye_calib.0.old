@@ -1,6 +1,6 @@
-<EliTask name="task_hand_eye_calib" installationName="default" robotType="CS63" createdVersion="2.13.0.0" lastSavedVersion="2.13.0.0" robotSN="11111111111111" savedTime="2026-03-18 04:06:51" directory="NewFolder" typeName="Robot Main Task">
+<EliTask name="task_hand_eye_calib" installationName="default" robotType="CS63" createdVersion="2.13.0.0" lastSavedVersion="2.13.0.0" robotSN="11111111111111" savedTime="2026-03-18 04:18:55" directory="NewFolder" typeName="Robot Main Task">
   <InitVariables typeName="Init Variables Value"/>
-  <MainTask isTaskAlwaysLoops="true" hasBeforeStart="false" hasInitVariables="true" typeName="Robot Main Task">
+  <MainTask isTaskAlwaysLoops="false" hasBeforeStart="false" hasInitVariables="true" typeName="Robot Main Task">
     <ScriptNode scriptType="FILE_TYPE" typeName="Script">
       <cachedFileContents>&quot;&quot;&quot;
 This script contains the functions and procedures to perform a hand-eye calibration
@@ -30,7 +30,7 @@ calibration_plates_list = [&quot;Calibration plate 15x13 50mm.cpd&quot;,
 &quot;Calibration plate 15x13 100mm.cpd&quot;,
 &quot;Calibration plate 15x13 200mm.cpd&quot;,
 &quot;Calibration plate 15x13 500mm.cpd&quot;]
-plate_selection = 2 # value from calibration plate selection list from 0 (50mm) to 3 (500mm)
+plate_selection = 1 # value from calibration plate selection list from 0 (50mm) to 3 (500mm)
 rotation_order = {
 &quot;user_specified_in_job&quot;: &quot;00&quot;,
 &quot;ypr&quot;: &quot;01&quot;,
@@ -167,9 +167,10 @@ def execute_calibration():
         movel(pose)
         current_pose = get_actual_tcp_pose()
         response = add_img_calib(current_pose, False)
+        popup(response, title=&quot;CAI command&quot;)
         
-      response = send_camera_parameters(&quot;CRP1146&quot;)
-      popup(response, title=&quot;CAI command&quot;)
+      response = send_camera_parameters(&quot;CRP1140&quot;)
+      popup(response, title=&quot;Calibration command&quot;)
     camera_connect(False)
 execute_calibration()
 </cachedFileContents>

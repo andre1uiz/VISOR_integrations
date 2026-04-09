@@ -9,7 +9,7 @@ be related to image acquisition pose - with same distance and angle from the tar
 """
 
 ##Connection parameters
-address = "192.168.100.130" #camera ip address
+address = "192.168.100.100" #camera ip address
 port = 2006 #camera port
 
 #Calibration parameters
@@ -20,7 +20,7 @@ units = {
 "cm":1,
 "m":2,
 "inch":3} #value for unit in meters - arbitrary unit not included
-unit_selection = units["m"]
+unit_selection = units["mm"]
 z_shift = 0.0 #z-shift value in the same unit previous selected
 calibration_plates_list = ["Calibration plate 15x13 50mm.cpd",
 "Calibration plate 15x13 100mm.cpd",
@@ -47,12 +47,13 @@ def string_format(message, message_size):
 #***************************************
 #receives pose list and formats it to camera positions
 #@pose = list(pose)[X,Y,Z,Rx,Ry,Rz] coords in [m] angles in rads
+#for better accuracy the pose is converted to mm
 #=>returns list(string_formatted_coordinates)
 def format_str_pose(pose):
   str_coords = []
   if len(pose) == 6:
     for coord in pose[:3]:
-      str_coords.append(string_format(to_str(floor(coord*1000)),8))
+      str_coords.append(string_format(to_str(floor(coord*1000000)),8))
 
     for angle in pose[3:]:
       deg_angle = r2d(angle)
@@ -90,7 +91,6 @@ def change_job(job):
   job_change_response = send_camera_parameters(send_str)
   popup(to_str(job_change_response)+"\n"+to_str(send_str), title= "Job alterado")
   #send_camera_parameters("TRG")
-  
   
 #*****************************************************
 #Configure calibration type to hand-eye
@@ -130,7 +130,7 @@ Parameters: pose - robot actual coordinates (list)
             is_plane -> is it for measurement plane (bool)
 Return success (bool)"""
 def add_img_calib(pose, is_plane):
-  add_img_message = "CAI12001"
+  add_img_message = "CAI12000"
   if is_plane:
     add_img_message = add_img_message + "1"
   else:
@@ -158,12 +158,14 @@ def execute_calibration():
       movel(poses[0])
       plane_pose = get_actual_tcp_pose()
       response = add_img_calib(plane_pose, True)
-      #popup(response, title="CAI command")
+      popup(response, title="CAI command")
+      sleep(5)
       for pose in poses[1:]:
         movel(pose)
+        sleep(5)
         current_pose = get_actual_tcp_pose()
         response = add_img_calib(current_pose, False)
-        #popup(response, title="CAI command")
+        popup(response, title="CAI command")
         
       response = send_camera_parameters("CRP1140")
       popup(response, title="Calibration command")
