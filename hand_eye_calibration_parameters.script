@@ -159,10 +159,8 @@ def execute_calibration():
       plane_pose = get_actual_tcp_pose()
       response = add_img_calib(plane_pose, True)
       popup(response, title="CAI command")
-      sleep(5)
       for pose in poses[1:]:
         movel(pose)
-        sleep(5)
         current_pose = get_actual_tcp_pose()
         response = add_img_calib(current_pose, False)
         popup(response, title="CAI command")

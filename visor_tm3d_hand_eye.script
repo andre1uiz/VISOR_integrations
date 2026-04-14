@@ -1,0 +1,144 @@
+"""
+This script is developed for teach offset for the camera using robot coordinates
+It will work with Target Mark3D 
+Detector must be detector number #1 or must be eddited accordingly here
+
+"""
+
+##Connection parameters
+address = "192.168.100.100" #camera ip address
+port = 2006 #camera port
+#*******************
+job_name = ""
+is_offset_configured = False
+
+#************************************************************
+"""To edit message length to a message_size number of bytes, completing with "0" prefix"""
+def string_format(message, message_size):
+  message_length = len(message)
+  number = ""
+  if message_length < message_size:
+    prefix_value = message_size - message_length
+    prefix = ""
+    for i in range(prefix_value):
+      prefix = prefix + "0"
+    number = str_cat(prefix,message)
+  return number
+#***************************************
+#receives pose list and formats it to camera positions
+#@pose = list(pose)[X,Y,Z,Rx,Ry,Rz] coords in [m] angles in rads
+#for better accuracy the pose is converted to mm
+#=>returns list(string_formatted_coordinates)
+def format_str_pose(pose):
+  str_coords = []
+  if len(pose) == 6:
+    for coord in pose[:3]:
+      str_coords.append(string_format(to_str(floor(coord*1000000)),8))
+
+    for angle in pose[3:]:
+      deg_angle = r2d(angle)
+      str_coords.append(string_format(to_str(floor(deg_angle)*1000),8))
+  else:
+    return(False)
+  if len(str_coords) == 6:
+    return str_coords
+#***************************************
+#Manages camera connection @bool, when True tries to connect, otherwise disconnects
+def camera_connect(status):
+  if status:
+    socket_open(address, port, "socket_0")
+  else:
+    socket_close("socket_0")
+  return socket_is_connected("socket_0")
+
+#***************************************
+def send_camera_parameters(message):
+  data_sent = socket_send_string(message, socket_name="socket_0")
+  if not data_sent:
+    popup("Failed to send message to the camera", title= "Message Failure")
+    return(False)
+  else:
+    response = socket_read_string(socket_name="socket_0", prefix="", suffix="", timeout=2)
+    if response:
+      return(response)
+    else:
+      return(False)
+#*****************************************************
+#change job function TODO: error treatement properly
+def change_job(job):
+  send_str = "CJN1"+string_format(to_str(str_len(job)),3)+job
+  job_change_response = send_camera_parameters(send_str)
+  if str_at(job_change_response, 3) == "P":
+    popup(to_str(job_change_response)+"\n"+to_str(send_str), title= "Job alterado")
+    return True
+  else:
+    popup(to_str(job_change_response)+"\n"+to_str(send_str), title= "Falha")
+    return False
+ 
+#*****************************************************
+"""
+Set parameter offset for tm3d
+function sets the target mark 3D offset based on robots current position
+"""
+def teach_offset():
+  position = get_actual_tcp_pose()
+  pos_string_list = format_str_pose(position)
+  trigger_str = "TRR104Part"
+  coord_string = ""
+  for coord in pos_string_list:
+    coord_string = coord_string + coord
+  is_connected = camera_connect(True)
+  if is_connected:
+    response = send_camera_parameters(trigger_str+coord_string)
+    if response:
+      offset_string = "SPP001034"+string_format(str(len(coord_string)),5)+coord_string
+      response = send_camera_parameters(offset_string)
+      if str_at(response,3) == "P":
+        popup("Offset done"+"\n"+response, title="Robotic Trigger")
+        camera_connect(False)
+    else:
+      popup(response, title="Robotic Trigger")
+      camera_connect(False)
+#*****************************************************
+"""
+Converts the list string received by the camera in robot coordinates
+input: list_pose_string[8] e.g ["005","P","X","Y","Z","rx","ry","rz"]
+X,Y and Z in mm*1000 and rx,ry and rz in degrees
+output: [X,Y,Z,rx,ry,rz]
+X,Y and Z in m and rx,ry and rz in rads
+"""
+def convert_to_pose(pose_string):
+  robot_pose = []
+  for coord in pose_string[2:5]:
+    robot_pose.append(float(coord)/1000000)
+  for angle in pose_string[5:]:
+    robot_pose.append(d2r(float(angle)/1000))
+  return robot_pose
+#*****************************************************
+"Change position based on the target mark"
+def change_coordinates():
+  position = get_actual_tcp_pose()
+  pos_string_list = format_str_pose(position)
+  trigger_str = "TRR104Part"
+  coord_string = ""
+  for coord in pos_string_list:
+    coord_string = coord_string + coord
+  is_connected = camera_connect(True)
+  if is_connected:
+    response = send_camera_parameters(trigger_str+coord_string)
+    if str_at(response,3) == "P":
+      substring_pos = str_find(response, "(")
+      substring = str_sub(response,substring_pos+1,(len(response)-(substring_pos+2)))
+      data_list = []
+      for data in range(7):
+        substring_pos = str_find(substring, ",")
+        result = str_sub(substring, 0, substring_pos)
+        data_list.append(result)
+        substring = str_sub(substring,substring_pos+1)
+      data_list.append(substring)
+      new_position = convert_to_pose(data_list)
+      #movel(new_position)
+      Frame = new_position
+      popup(str(data_list) +"\n"+ str(new_position), title="Robotic Trigger")
+#*****************************************************
+change_coordinates()
