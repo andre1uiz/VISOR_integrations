@@ -1,9 +1,0 @@
-<EliTask name="task_hand_eye_calib" installationName="hand_eye" robotType="CS63" createdVersion="2.13.0.0" lastSavedVersion="2.13.0.0" robotSN="11111111111111" savedTime="2026-04-02 21:42:23" directory="VISOR" installationDirectory="/VISOR" typeName="Robot Main Task">
-  <InitVariables typeName="Init Variables Value"/>
-  <MainTask isTaskAlwaysLoops="false" hasBeforeStart="false" hasInitVariables="true" typeName="Robot Main Task">
-    <ScriptNode scriptType="FILE_TYPE" typeName="Script">
-      <cachedFileContents></cachedFileContents>
-      <scriptFile pathRootType="TASK_PATH" path="NewFolder/hand_eye_calibration_parameters.script"/>
-    </ScriptNode>
-  </MainTask>
-</EliTask>

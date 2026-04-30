@@ -1,6 +1,6 @@
-address = "192.168.100.130" #camera ip address
+address = "192.168.100.100" #camera ip address
 port = 2006 #camera port
-job_name = "Calib" #job name where calibration needs to be configurated 
+job_name = "Job5" #job name where calibration needs to be configurated 
 
 """To edit job name length to a 3 byte size"""
 def string_format(message, message_size):

@@ -57,7 +57,7 @@ def format_str_pose(pose):
 
     for angle in pose[3:]:
       deg_angle = r2d(angle)
-      str_coords.append(string_format(to_str(floor(deg_angle)),8))
+      str_coords.append(string_format(to_str(floor(deg_angle)*1000),8))
   else:
     return(False)
   if len(str_coords) == 6:

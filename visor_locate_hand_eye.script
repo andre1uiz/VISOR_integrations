@@ -1,8 +1,7 @@
 """
-This script is developed for teach offset for the camera using robot coordinates
-It will work with Target Mark3D 
+When a part is located, the robot receives back the coordinates and a movement is started
 Detector must be detector number #1 or must be eddited accordingly here
-
+The movement command is inside the script
 """
 
 ##Connection parameters
@@ -121,12 +120,14 @@ def change_coordinates():
   pos_string_list = format_str_pose(position)
   trigger_str = "TRR104Part"
   coord_string = ""
+  decision = False
   for coord in pos_string_list:
     coord_string = coord_string + coord
   is_connected = camera_connect(True)
   if is_connected:
     response = send_camera_parameters(trigger_str+coord_string)
     if str_at(response,3) == "P":
+      decision = True
       substring_pos = str_find(response, "(")
       substring = str_sub(response,substring_pos+1,(len(response)-(substring_pos+2)))
       data_list = []
@@ -137,7 +138,11 @@ def change_coordinates():
         substring = str_sub(substring,substring_pos+1)
       data_list.append(substring)
       new_position = convert_to_pose(data_list)
-      movel(new_position)
-      popup(str(data_list) +"\n"+ str(new_position), title="Robotic Trigger")
+      #popup(str(data_list) +"\n"+ str(new_position), title="Robotic Trigger")
+    else:
+      popup("Not Found", title="Robotic Trigger")
+      new_position = [0,0,0,0,0,0]
+      decision = False
+    return decision, new_position
 #*****************************************************
-change_coordinates()
+camera_decision, camera = change_coordinates()

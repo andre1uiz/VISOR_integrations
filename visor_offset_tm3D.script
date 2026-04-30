@@ -91,7 +91,6 @@ def teach_offset():
   if is_connected:
     response = send_camera_parameters(trigger_str+coord_string)
     if response:
-      #movel(pose2)
       position = get_actual_tcp_pose()
       pos_string_list = format_str_pose(position)
       coord_string = ""
